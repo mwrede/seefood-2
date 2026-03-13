@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
-const API_KEY = import.meta.env.VITE_ROBOFLOW_API_KEY
+const API_KEY = 'jIlsPhHeCYPv0LCOooQT'
 const WORKSPACE = 'michael-h89ju'
 const WORKFLOW_ID = 'custom-workflow-8'
 
@@ -87,7 +87,11 @@ function App() {
         )
         clearTimeout(timeoutId)
 
-        if (!response.ok) throw new Error(`API error: ${response.status}`)
+        if (!response.ok) {
+        const errorBody = await response.text()
+        console.error('API error body:', errorBody)
+        throw new Error(`API error: ${response.status} - ${errorBody.slice(0, 200)}`)
+      }
 
         const data = await response.json()
         console.log('Roboflow response:', data)
