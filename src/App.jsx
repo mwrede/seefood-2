@@ -46,19 +46,27 @@ function App() {
     const canvas = canvasRef.current
     if (!video || !canvas || video.videoWidth === 0) return
 
+    // Capture at full res for display
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
-    setCapturedImage(dataUrl)
+    const displayUrl = canvas.toDataURL('image/jpeg', 0.8)
+    setCapturedImage(displayUrl)
     setResult(null)
     setError(null)
 
-    // Inline the API call to avoid stale closure issues
+    // Resize to max 640px for API (smaller payload = faster upload)
+    const maxDim = 640
+    const scale = Math.min(maxDim / video.videoWidth, maxDim / video.videoHeight, 1)
+    canvas.width = Math.round(video.videoWidth * scale)
+    canvas.height = Math.round(video.videoHeight * scale)
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    const apiDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+
     ;(async () => {
       setLoading(true)
       try {
-        const base64 = dataUrl.split(',')[1]
+        const base64 = apiDataUrl.split(',')[1]
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 30000)
 
@@ -104,7 +112,8 @@ function App() {
         audio.play().catch(() => {})
       } catch (err) {
         console.error('Analysis error:', err)
-        setError(err.name === 'AbortError' ? 'Request timed out. Try again.' : 'Failed to analyze image. Try again.')
+        const msg = err.name === 'AbortError' ? 'Request timed out. Try again.' : `Error: ${err.message}`
+        setError(msg)
       } finally {
         setLoading(false)
       }
