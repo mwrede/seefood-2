@@ -284,12 +284,12 @@
 
 .retry-btn {
   position: absolute;
-  bottom: 40px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 20;
-  padding: 14px 40px;
-  font-size: 18px;
+  padding: 10px 24px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
   background: rgba(0, 0, 0, 0.5);
