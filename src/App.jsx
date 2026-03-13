@@ -63,11 +63,15 @@ function App() {
     try {
       const base64 = dataUrl.split(',')[1]
 
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000)
+
       const response = await fetch(
         `https://serverless.roboflow.com/infer/workflows/${WORKSPACE}/${WORKFLOW_ID}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             api_key: API_KEY,
             inputs: {
@@ -77,6 +81,7 @@ function App() {
           }),
         }
       )
+      clearTimeout(timeout)
 
       if (!response.ok) throw new Error(`API error: ${response.status}`)
 
@@ -98,23 +103,25 @@ function App() {
   }
 
   const parseRoboflowResponse = (data) => {
+    // Response format: {"outputs":[{"output_1":"Yes"}]} or {"outputs":[{"output_1":"No"}]}
+    if (data?.outputs && Array.isArray(data.outputs)) {
+      const first = data.outputs[0]
+      if (first?.output_1) return first.output_1
+      // fallback: check any string value in first output
+      if (first) {
+        for (const val of Object.values(first)) {
+          if (typeof val === 'string') return val
+        }
+      }
+    }
     if (Array.isArray(data)) {
       const first = data[0]
       if (first) {
-        for (const key of Object.keys(first)) {
-          const val = first[key]
+        for (const val of Object.values(first)) {
           if (typeof val === 'string') return val
-          if (typeof val === 'object' && val !== null) {
-            for (const k2 of Object.keys(val)) {
-              if (typeof val[k2] === 'string') return val[k2]
-            }
-          }
         }
-        return JSON.stringify(first)
       }
     }
-    if (typeof data === 'string') return data
-    if (data?.output) return String(data.output)
     return JSON.stringify(data)
   }
 
