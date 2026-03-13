@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 const API_KEY = import.meta.env.VITE_ROBOFLOW_API_KEY
@@ -8,7 +8,7 @@ const WORKFLOW_ID = 'custom-workflow-8'
 function App() {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
-  const [stream, setStream] = useState(null)
+  const streamRef = useRef(null)
   const [capturedImage, setCapturedImage] = useState(null)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -17,125 +17,101 @@ function App() {
   const [showAbout, setShowAbout] = useState(false)
   const audioRef = useRef(null)
 
-  const startCamera = useCallback(async () => {
-    try {
-      setError(null)
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
-        audio: false,
-      })
-      setStream(mediaStream)
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
+  useEffect(() => {
+    let cancelled = false
+    async function init() {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } },
+          audio: false,
+        })
+        if (cancelled) {
+          mediaStream.getTracks().forEach(t => t.stop())
+          return
+        }
+        streamRef.current = mediaStream
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream
+        }
+      } catch {
+        if (!cancelled) setError('Could not access camera. Please allow camera permissions.')
       }
-    } catch {
-      setError('Could not access camera. Please allow camera permissions.')
     }
+    init()
+    return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    startCamera()
-  }, [])
-
-  useEffect(() => {
-    if (stream && videoRef.current) {
-      videoRef.current.srcObject = stream
-    }
-  }, [stream, showAbout])
-
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return
+  function capturePhoto() {
     const video = videoRef.current
     const canvas = canvasRef.current
+    if (!video || !canvas || video.videoWidth === 0) return
+
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(video, 0, 0)
+    canvas.getContext('2d').drawImage(video, 0, 0)
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
     setCapturedImage(dataUrl)
     setResult(null)
-    analyzeImage(dataUrl)
-  }, [])
-
-  const analyzeImage = async (dataUrl) => {
-    setLoading(true)
     setError(null)
-    try {
-      const base64 = dataUrl.split(',')[1]
 
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 30000)
+    // Inline the API call to avoid stale closure issues
+    ;(async () => {
+      setLoading(true)
+      try {
+        const base64 = dataUrl.split(',')[1]
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      const response = await fetch(
-        `https://serverless.roboflow.com/infer/workflows/${WORKSPACE}/${WORKFLOW_ID}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            api_key: API_KEY,
-            inputs: {
-              image: { type: 'base64', value: base64 },
-              dog: { type: 'base64', value: base64 },
-            },
-          }),
+        const response = await fetch(
+          `https://serverless.roboflow.com/infer/workflows/${WORKSPACE}/${WORKFLOW_ID}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              api_key: API_KEY,
+              inputs: {
+                image: { type: 'base64', value: base64 },
+                dog: { type: 'base64', value: base64 },
+              },
+            }),
+          }
+        )
+        clearTimeout(timeoutId)
+
+        if (!response.ok) throw new Error(`API error: ${response.status}`)
+
+        const data = await response.json()
+        console.log('Roboflow response:', data)
+
+        // Parse: {"outputs":[{"output_1":"Yes"}]} or {"outputs":[{"output_1":"No"}]}
+        let answer = ''
+        if (data?.outputs?.[0]?.output_1) {
+          answer = data.outputs[0].output_1
+        } else {
+          answer = JSON.stringify(data)
         }
-      )
-      clearTimeout(timeout)
+        console.log('Parsed answer:', answer)
 
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
+        const isHotdog = answer.toLowerCase().includes('yes')
+        const resultType = isHotdog ? 'hotdog' : 'nothotdog'
+        setResult(resultType)
 
-      const data = await response.json()
-      console.log('Roboflow response:', data)
-
-      const outputText = parseRoboflowResponse(data)
-      console.log('Parsed output:', outputText)
-      const isHotdog = outputText.toLowerCase().includes('yes')
-      const resultType = isHotdog ? 'hotdog' : 'nothotdog'
-      setResult(resultType)
-      playResultAudio(resultType)
-    } catch (err) {
-      console.error('Analysis error:', err)
-      setError('Failed to analyze image. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const parseRoboflowResponse = (data) => {
-    // Response format: {"outputs":[{"output_1":"Yes"}]} or {"outputs":[{"output_1":"No"}]}
-    if (data?.outputs && Array.isArray(data.outputs)) {
-      const first = data.outputs[0]
-      if (first?.output_1) return first.output_1
-      // fallback: check any string value in first output
-      if (first) {
-        for (const val of Object.values(first)) {
-          if (typeof val === 'string') return val
-        }
+        // Play audio
+        if (audioRef.current) audioRef.current.pause()
+        const audio = new Audio(isHotdog ? '/audio/hotdog.mp4' : '/audio/nothotdog.mp4')
+        audioRef.current = audio
+        audio.play().catch(() => {})
+      } catch (err) {
+        console.error('Analysis error:', err)
+        setError(err.name === 'AbortError' ? 'Request timed out. Try again.' : 'Failed to analyze image. Try again.')
+      } finally {
+        setLoading(false)
       }
-    }
-    if (Array.isArray(data)) {
-      const first = data[0]
-      if (first) {
-        for (const val of Object.values(first)) {
-          if (typeof val === 'string') return val
-        }
-      }
-    }
-    return JSON.stringify(data)
+    })()
   }
 
-  const playResultAudio = (type) => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
-    const src = type === 'hotdog' ? '/audio/hotdog.mp4' : '/audio/nothotdog.mp4'
-    const audio = new Audio(src)
-    audioRef.current = audio
-    audio.play().catch(() => {})
-  }
-
-  const reset = () => {
+  function reset() {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current = null
@@ -147,7 +123,6 @@ function App() {
 
   return (
     <>
-      {/* About page - overlays on top */}
       {showAbout && (
         <div className="about-page">
           <div className="about-content">
@@ -161,7 +136,6 @@ function App() {
         </div>
       )}
 
-      {/* Main camera app - always mounted */}
       <div className="app" style={{ display: showAbout ? 'none' : undefined }}>
         <header className="header">
           <h1 className="logo">
@@ -219,6 +193,13 @@ function App() {
                   </div>
                 </div>
               )}
+
+              {error && (
+                <div className="overlay error-overlay">
+                  <p className="error-text">{error}</p>
+                  <button className="retry-btn" onClick={reset}>Try Again</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -229,14 +210,10 @@ function App() {
           )}
         </div>
 
-        {/* New Photo button - top right, above overlay */}
         {capturedImage && result && (
-          <button className="retry-btn" onClick={reset}>
-            {error ? 'Try Again' : 'New Photo'}
-          </button>
+          <button className="retry-btn" onClick={reset}>New Photo</button>
         )}
 
-        {/* Capture button - bottom center */}
         {!capturedImage && (
           <div className="controls">
             <button

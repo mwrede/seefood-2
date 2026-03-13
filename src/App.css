@@ -225,6 +225,19 @@
   }
 }
 
+/* Error overlay on captured image */
+.error-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  gap: 20px;
+}
+
+.error-text {
+  color: #f87171;
+  font-size: 18px;
+  font-weight: 600;
+}
+
 /* Error */
 .error-message {
   position: absolute;
