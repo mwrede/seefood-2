@@ -1,0 +1,356 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #000;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 12px 16px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-link {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.about-link:active {
+  color: #fff;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.logo-see {
+  color: #fff;
+}
+
+.logo-food {
+  color: #4ade80;
+}
+
+/* Camera */
+.camera-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #111;
+}
+
+.camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-feed.hidden {
+  display: none;
+}
+
+.hidden-canvas {
+  display: none;
+}
+
+/* Captured image view */
+.captured-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captured-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Overlays */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 5;
+}
+
+/* Loading */
+.loading-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.analyzing-text {
+  margin-top: 16px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* HOTDOG overlay - green banner at top, checkmark below */
+.hotdog-overlay {
+  justify-content: flex-start;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.hotdog-banner {
+  width: 100%;
+  background: #22c55e;
+  padding: 24px 0 32px;
+  text-align: center;
+}
+
+.hotdog-text {
+  font-size: 52px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  text-transform: capitalize;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.hotdog-circle {
+  width: 80px;
+  height: 80px;
+  background: #22c55e;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  margin-top: -20px;
+}
+
+/* NOT HOTDOG overlay - X icon then red banner at bottom */
+.nothotdog-overlay {
+  justify-content: flex-end;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.nothotdog-circle {
+  width: 80px;
+  height: 80px;
+  background: #dc2626;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  margin-bottom: -20px;
+  z-index: 2;
+}
+
+.nothotdog-banner {
+  width: 100%;
+  background: #dc2626;
+  padding: 32px 0 24px;
+  text-align: center;
+}
+
+.nothotdog-text {
+  font-size: 52px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Shared result styles */
+.result-icon-circle {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 6;
+}
+
+.result-icon {
+  width: 44px;
+  height: 44px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Error */
+.error-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  color: #f87171;
+  font-size: 18px;
+  background: #111;
+}
+
+/* Controls */
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  padding: 24px 0 40px;
+  background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+}
+
+.capture-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.capture-btn:active {
+  transform: scale(0.92);
+}
+
+.capture-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.capture-btn-inner {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.retry-btn {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 14px 40px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.retry-btn:active {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* About Page */
+.about-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #fff;
+  color: #000;
+  max-width: 500px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-content {
+  text-align: center;
+  padding: 32px;
+}
+
+.about-logo {
+  font-size: 48px;
+  font-weight: 900;
+  margin: 0 0 32px;
+  letter-spacing: -1px;
+}
+
+.about-text {
+  font-size: 20px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 48px;
+}
+
+.back-btn {
+  padding: 14px 40px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: #000;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.back-btn:active {
+  opacity: 0.7;
+}
